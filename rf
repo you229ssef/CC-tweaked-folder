@@ -1,0 +1,93 @@
+-- reactor_safety.lua
+-- Monitors coolant AND nuclear waste levels
+-- Triggers shutdown on: coolant <= 25% OR waste >= 60%
+
+local COOLANT_THRESHOLD = 0.25  -- 25%
+local WASTE_THRESHOLD   = 0.60  -- 60%
+local REDSTONE_SIDE = "back"
+local POLL_INTERVAL = 2
+
+-- Find the Logic Adapter
+local reactorSide = nil
+
+for _, side in ipairs({"top","bottom","left","right","front","back"}) do
+    if peripheral.getType(side) == "fissionReactorLogicAdapter" then
+        reactorSide = side
+        break
+    end
+end
+
+if not reactorSide then
+    print("ERROR: Fission Reactor Logic Adapter not found!")
+    print("Place computer next to the Logic Adapter block.")
+    return
+end
+
+print("=== Reactor Safety Monitor ===")
+print("Found on: " .. reactorSide)
+print("Coolant threshold: " .. (COOLANT_THRESHOLD * 100) .. "%")
+print("Waste threshold:   " .. (WASTE_THRESHOLD * 100) .. "%")
+print("Running...")
+
+while true do
+    local ok1, coolant = pcall(peripheral.call, reactorSide, "getCoolantFilledPercentage")
+    local ok2, temp    = pcall(peripheral.call, reactorSide, "getTemperature")
+    local ok3, active  = pcall(peripheral.call, reactorSide, "getStatus")
+    local ok4, waste   = pcall(peripheral.call, reactorSide, "getWasteFilledPercentage")
+
+    term.clear()
+    term.setCursorPos(1, 1)
+    print("=== Reactor Safety Monitor ===")
+    print("Side: " .. reactorSide)
+
+    if ok1 then
+        print(string.format("Coolant: %.1f%%", coolant * 100))
+    else
+        print("Coolant: ERROR")
+    end
+
+    if ok4 then
+        print(string.format("Waste:   %.1f%%", waste * 100))
+    else
+        print("Waste:   ERROR")
+    end
+
+    if ok2 then
+        print(string.format("Temp:    %.1f K", temp))
+    else
+        print("Temp:    ERROR")
+    end
+
+    if ok3 then
+        print(string.format("Status:  %s", active and "ACTIVE" or "INACTIVE"))
+    else
+        print("Status:  ERROR")
+    end
+
+    print("")
+
+    local lowCoolant = ok1 and coolant <= COOLANT_THRESHOLD
+    local highWaste  = ok4 and waste >= WASTE_THRESHOLD
+
+    if lowCoolant or highWaste then
+        if lowCoolant then
+            print("*** LOW COOLANT WARNING ***")
+        end
+        if highWaste then
+            print("*** HIGH WASTE WARNING ***")
+        end
+        print("Triggering shutdown...")
+
+        redstone.setOutput(REDSTONE_SIDE, true)
+
+        if ok3 and active then
+            pcall(peripheral.call, reactorSide, "scram")
+            print("Reactor SCRAMMED.")
+        end
+    else
+        print("Status: NORMAL")
+        redstone.setOutput(REDSTONE_SIDE, false)
+    end
+
+    sleep(POLL_INTERVAL)
+end
