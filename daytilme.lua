@@ -1,18 +1,18 @@
 --[[
   Environment Detector Redstone Controller
-  Requires: Advanced Peripherals (Environment Detector)
+  Detector must be placed ON TOP of the computer.
   
   Left  -> 1s pulse when night starts
   Right -> 1s pulse when rain or thunder starts
 ]]
 
-local CHECK_INTERVAL = 5  -- seconds between checks
-local PULSE_DURATION = 1  -- seconds the signal stays high
+local CHECK_INTERVAL = 5
+local PULSE_DURATION = 1
 
--- Find the Environment Detector
-local detector = peripheral.find("environmentDetector")
+-- Explicitly wrap the detector on top
+local detector = peripheral.wrap("top")
 if not detector then
-    error("No Environment Detector found! Attach one to the computer.")
+    error("No Environment Detector found on top! Place it on top of the computer.")
 end
 
 local wasNight = false
@@ -25,24 +25,22 @@ local function pulse(side, reason)
     redstone.setOutput(side, false)
 end
 
-print("Environment Detector Redstone Controller")
+print("Environment Detector on top detected.")
 print("Left = Night | Right = Rain/Storm")
 print("Running...")
 
 while true do
-    local time = detector.getTime()      -- "day", "night", etc.
-    local raining = detector.isRaining() -- boolean
-    local thunder = detector.isThunder() -- boolean
+    local time = detector.getTime()
+    local raining = detector.isRaining()
+    local thunder = detector.isThunder()
 
     local isNight = (time == "night")
     local isStormy = raining or thunder
 
-    -- Pulse LEFT when night begins
     if isNight and not wasNight then
         pulse("left", "Night started")
     end
 
-    -- Pulse RIGHT when rain/thunder begins
     if isStormy and not wasRaining then
         pulse("right", "Rain/Storm started")
     end
