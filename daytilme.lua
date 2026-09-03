@@ -1,6 +1,6 @@
 --[[
   Environment Detector Redstone Controller
-  Detector must be placed ON TOP of the computer.
+  Detector on TOP of the computer.
   
   Left  -> 1s pulse when night starts
   Right -> 1s pulse when rain or thunder starts
@@ -9,14 +9,13 @@
 local CHECK_INTERVAL = 5
 local PULSE_DURATION = 1
 
--- Explicitly wrap the detector on top
 local detector = peripheral.wrap("top")
 if not detector then
-    error("No Environment Detector found on top! Place it on top of the computer.")
+    error("No Environment Detector found on top!")
 end
 
 local wasNight = false
-local wasRaining = false
+local wasStormy = false
 
 local function pulse(side, reason)
     print(string.format("[%s] Pulsing %s for %ds", reason, side, PULSE_DURATION))
@@ -25,28 +24,34 @@ local function pulse(side, reason)
     redstone.setOutput(side, false)
 end
 
-print("Environment Detector on top detected.")
+-- Minecraft time: 0=sunrise, ~6000=noon, ~12000=sunset, ~18000=midnight
+local function isNightTime(time)
+    return time >= 12000 or time < 1000
+end
+
+print("Environment Detector Controller running...")
 print("Left = Night | Right = Rain/Storm")
-print("Running...")
 
 while true do
-    local time = detector.getTime()
-    local raining = detector.isRaining()
-    local thunder = detector.isThunder()
+    local time = detector.getTime()      -- NUMBER (0-24000)
+    local raining = detector.isRaining() -- boolean
+    local thunder = detector.isThunder() -- boolean
 
-    local isNight = (time == "night")
-    local isStormy = raining or thunder
+    local night = isNightTime(time)
+    local stormy = raining or thunder
 
-    if isNight and not wasNight then
+    -- Pulse LEFT when night begins
+    if night and not wasNight then
         pulse("left", "Night started")
     end
 
-    if isStormy and not wasRaining then
+    -- Pulse RIGHT when rain/thunder begins
+    if stormy and not wasStormy then
         pulse("right", "Rain/Storm started")
     end
 
-    wasNight = isNight
-    wasRaining = isStormy
+    wasNight = night
+    wasStormy = stormy
 
     sleep(CHECK_INTERVAL)
 end
