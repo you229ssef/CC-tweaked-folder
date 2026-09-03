@@ -1,68 +1,65 @@
---[[ DEBUG SCRIPT - Run this and tell me the output ]]
+local detector = peripheral.wrap("top")
+if not detector then error("No Environment Detector on top!") end
 
-print("=== PERIPHERAL SCAN ===")
-local names = peripheral.getNames()
-for _, name in ipairs(names) do
-    local p = peripheral.wrap(name)
-    local pType = peripheral.getType(name)
-    print(string.format("Side: %s | Type: %s", name, tostring(pType)))
-    
-    -- Try to list methods if available
-    if p and p.getDocs then
-        local methods = p.getDocs()
-        print("  Methods: " .. textutils.serialize(methods))
-    end
+local logFile = "env_log.txt"
+local function log(msg)
+    local f = fs.open(logFile, "a")
+    f.writeLine(msg)
+    f.close()
+    print(msg)
 end
 
-print("\n=== TRYING TOP ===")
-local det = peripheral.wrap("top")
-if det then
-    print("Wrapped successfully!")
-    
-    -- Try each method with error catching
-    local function try(name, ...)
-        local ok, result = pcall(det[name], ...)
-        if ok then
-            print(string.format("  %s() = %s", name, textutils.serialize(result)))
-        else
-            print(string.format("  %s() FAILED: %s", name, tostring(result)))
-        end
-    end
-    
-    try("getTime")
-    try("getDimension")
-    try("getDimensionProvider")
-    try("isRaining")
-    try("isThunder")
-    try("isSunny")
-    try("getBiome")
-    try("getMoonId")
-    
-    -- Try some alternate method names just in case
-    try("getWeather")
-    try("isStorming")
-    try("getDimensionName")
-else
-    print("peripheral.wrap('top') returned nil!")
-end
+-- Clear old log
+if fs.exists(logFile) then fs.delete(logFile) end
 
-print("\n=== REDSTONE TEST ===")
-print("Turning LEFT on for 2 seconds...")
+log("=== STARTED ===")
+
+-- Startup test: pulse both sides so you know redstone works
+log("Testing redstone...")
 redstone.setOutput("left", true)
-sleep(2)
+sleep(0.5)
 redstone.setOutput("left", false)
-print("Done. Did you see anything?")
+sleep(0.5)
+redstone.setOutput("right", true)
+sleep(0.5)
+redstone.setOutput("right", false)
+log("Redstone test done. Left then Right should have blinked.")
 
-print("\n=== WAITING 10s, printing time every second ===")
-for i = 1, 10 do
-    if det then
-        local ok, t = pcall(det.getTime)
-        if ok then
-            print(string.format("  Time: %s", tostring(t)))
-        else
-            print("  getTime error: " .. tostring(t))
+local wasNight = false
+local wasStormy = false
+
+while true do
+    local ok1, time = pcall(detector.getTime)
+    local ok2, raining = pcall(detector.isRaining)
+    local ok3, thunder = pcall(detector.isThunder)
+
+    if not ok1 then log("getTime ERROR: " .. tostring(time)) end
+    if not ok2 then log("isRaining ERROR: " .. tostring(raining)) end
+    if not ok3 then log("isThunder ERROR: " .. tostring(thunder)) end
+
+    if ok1 and ok2 and ok3 then
+        local night = (time >= 12000 or time < 1000)
+        local stormy = raining or thunder
+
+        log(string.format("Time:%s Night:%s Rain:%s Thunder:%s", tostring(time), tostring(night), tostring(raining), tostring(thunder)))
+
+        if night and not wasNight then
+            log(">>> NIGHT DETECTED - Pulsing LEFT")
+            redstone.setOutput("left", true)
+            sleep(1)
+            redstone.setOutput("left", false)
         end
+
+        if stormy and not wasStormy then
+            log(">>> STORM DETECTED - Pulsing RIGHT")
+            redstone.setOutput("right", true)
+            sleep(1)
+            redstone.setOutput("right", false)
+        end
+
+        wasNight = night
+        wasStormy = stormy
     end
-    sleep(1)
+
+    sleep(5)
 end
-print("=== END DEBUG ===")
