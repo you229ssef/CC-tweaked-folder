@@ -1,7 +1,6 @@
 -- ============================================
--- X2 SLAVE v5.2 — Secondary Computer
+-- X2 SLAVE v5.3 — Fixed Analog Output
 -- Ender Modem on TOP
--- Drives redstone for thrusters
 -- ============================================
 
 local MODEM_SIDE = "top"
@@ -22,7 +21,7 @@ term.setBackgroundColor(colors.black)
 term.clear()
 term.setCursorPos(1,1)
 term.setTextColor(C_HEAD)
-print("  X2 SLAVE v5.2  ")
+print("  X2 SLAVE v5.3  ")
 term.setTextColor(C_DIM)
 print(string.rep("\140", 20))
 term.setTextColor(C_TEXT)
@@ -32,17 +31,17 @@ while true do
     local id, msg = rednet.receive()
     if type(msg) == "table" then
         if msg.left ~= nil then
-            rs.setOutput(LEFT_SIDE, msg.left)
+            rs.setAnalogOutput(LEFT_SIDE, msg.left)
         end
         if msg.right ~= nil then
-            rs.setOutput(RIGHT_SIDE, msg.right)
+            rs.setAnalogOutput(RIGHT_SIDE, msg.right)
         end
         if msg.altitude ~= nil then
             local out = 15 - msg.altitude
-            rs.setOutput(ALT_SIDE, out)
+            rs.setAnalogOutput(ALT_SIDE, out)
         end
         if msg.engine ~= nil then
-            rs.setOutput(ENGINE_SIDE, msg.engine)
+            rs.setAnalogOutput(ENGINE_SIDE, msg.engine)
         end
         
         term.setCursorPos(1, 5)
