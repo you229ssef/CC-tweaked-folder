@@ -1,6 +1,7 @@
 -- ============================================
--- X2 AUTOPILOT v5.2 — Main Computer
+-- X2 AUTOPILOT v5.4 — Fixed Altitude 6
 -- Ender Modem on BACK
+-- Altitude locked to 6 during flight
 -- ============================================
 
 local MODEM_SIDE = "back"
@@ -15,8 +16,6 @@ local BRAKE_DIST = 300
 local LOOKAHEAD = 3.0
 local YAW_KP = 2.0
 local ALT_HOVER = 6
-local ALT_MIN = 3
-local ALT_MAX = 9
 
 -- Colors
 local C_HEAD = colors.cyan
@@ -107,7 +106,7 @@ function sendControls(left, right, altitude, engine)
     rednet.broadcast({
         left = clamp(math.floor(left), 0, 15),
         right = clamp(math.floor(right), 0, 15),
-        altitude = clamp(math.floor(altitude), ALT_MIN, ALT_MAX),
+        altitude = clamp(math.floor(altitude), 0, 15),
         engine = clamp(math.floor(engine), 0, 15)
     })
 end
@@ -169,11 +168,10 @@ function autopilotTick()
     
     local left = base + diff
     local right = base - diff
-    local altErr = targetWP.y - pos.y
-    local altitude = clamp(ALT_HOVER + altErr * 0.25, ALT_MIN, ALT_MAX)
     local engine = (left + right) / 2
     
-    sendControls(left, right, altitude, engine)
+    -- ALTITUDE ALWAYS 6 DURING FLIGHT
+    sendControls(left, right, ALT_HOVER, engine)
 end
 
 -- ============ COLOR UI =========
@@ -184,7 +182,7 @@ function drawMenu()
     
     term.setCursorPos(1,1)
     term.setTextColor(C_HEAD)
-    print("  \187  X2 AUTOPILOT v5.2  \171  ")
+    print("  \187  X2 AUTOPILOT v5.4  \171  ")
     term.setTextColor(C_DIM)
     print(string.rep("\140", 26))
     
@@ -362,9 +360,10 @@ term.setBackgroundColor(colors.black)
 term.clear()
 term.setCursorPos(1,1)
 term.setTextColor(C_HEAD)
-print("X2 AUTOPILOT v5.2")
+print("X2 AUTOPILOT v5.4")
 term.setTextColor(C_TEXT)
 print("Modem: " .. MODEM_SIDE)
+print("Alt: " .. ALT_HOVER .. " (locked)")
 print("Cruise: " .. CRUISE_SPEED)
 print("")
 term.setTextColor(C_DIM)
