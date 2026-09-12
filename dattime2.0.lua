@@ -10,6 +10,7 @@ local function pulse(side, reason)
     sleep(1)
     redstone.setOutput(side, false)
 end
+print("The program is now offelely running succfesfully")
 
 -- Startup test
 print("Testing redstone...")
