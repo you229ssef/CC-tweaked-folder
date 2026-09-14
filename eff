@@ -1,0 +1,33 @@
+-- coords.lua
+local pd = peripheral.find("playerDetector")
+
+if not pd then
+    print("ERROR: No Player Detector found!")
+    print("Make sure it's directly next to the computer.")
+    return
+end
+
+while true do
+    term.clear()
+    term.setCursorPos(1, 1)
+    print("=== Player Coordinates ===")
+
+    local ok, players = pcall(pd.getPlayers)
+
+    if not ok then
+        print("getPlayers() failed: " .. tostring(players))
+    elseif #players == 0 then
+        print("No players in range")
+    else
+        for _, name in ipairs(players) do
+            local ok2, pos = pcall(pd.getPlayerPos, name)
+            if ok2 and pos then
+                print(("%s: X=%d Y=%d Z=%d [%s]")
+                    :format(name, pos.x, pos.y, pos.z, pos.dimension))
+            end
+        end
+    end
+
+    print("==========================")
+    sleep(5)
+end
