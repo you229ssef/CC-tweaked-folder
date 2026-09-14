@@ -1,4 +1,4 @@
--- coords.lua
+-- startup
 local pd = peripheral.wrap("bottom")
 local monitor = peripheral.wrap("right")
 
@@ -8,7 +8,7 @@ if not pd then
 end
 
 if not monitor then
-    print("Warning: no monitor on the right, using terminal only")
+    print("Warning: no monitor on the right, terminal only")
 end
 
 local FILENAME = "last_locations.txt"
@@ -30,7 +30,7 @@ end
 local function draw(target)
     target.clear()
     target.setCursorPos(1, 1)
-    target.print("=== Player Coordinates (last known) ===")
+    target.write("=== Player Coordinates ===\n")
 
     local names = {}
     for name in pairs(lastKnown) do
@@ -41,23 +41,19 @@ local function draw(target)
     for _, name in ipairs(names) do
         local d = lastKnown[name]
         local status = d.online and "ONLINE " or "offline"
-        target.print(("%s [%s]: X=%d Y=%d Z=%d (%s)")
+        target.write(("%s [%s]: X=%d Y=%d Z=%d (%s)\n")
             :format(name, status, d.x, d.y, d.z, d.dimension))
     end
-
-    target.print("=======================================")
 end
 
 while true do
     local ok, players = pcall(pd.getOnlinePlayers)
 
     if ok then
-        -- Mark everyone offline first
         for name in pairs(lastKnown) do
             lastKnown[name].online = false
         end
 
-        -- Update online players with fresh coords
         for _, name in ipairs(players) do
             local ok2, pos = pcall(pd.getPlayerPos, name)
             if ok2 and pos then
@@ -72,7 +68,6 @@ while true do
         save()
     end
 
-    -- Draw to both screens
     draw(term)
     if monitor then
         draw(monitor)
