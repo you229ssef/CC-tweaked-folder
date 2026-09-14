@@ -11,20 +11,21 @@ while true do
     term.setCursorPos(1, 1)
     print("=== Player Coordinates ===")
 
-    local ok, players = pcall(pd.getPlayers)
+    local ok, players = pcall(pd.getOnlinePlayers)
 
     if not ok then
-        print("That block isn't a Player Detector!")
-        print("Peripheral type: " .. peripheral.getType("back"))
+        print("getOnlinePlayers() failed: " .. tostring(players))
         break
     elseif #players == 0 then
-        print("No players in range")
+        print("No players online")
     else
         for _, name in ipairs(players) do
             local ok2, pos = pcall(pd.getPlayerPos, name)
             if ok2 and pos then
                 print(("%s: X=%d Y=%d Z=%d [%s]")
                     :format(name, pos.x, pos.y, pos.z, pos.dimension))
+            else
+                print(name .. ": (no data)")
             end
         end
     end
